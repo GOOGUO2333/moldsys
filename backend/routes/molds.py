@@ -5,6 +5,7 @@ from datetime import datetime
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 import io
+import traceback
 
 molds_bp = Blueprint('molds', __name__)
 
@@ -330,7 +331,11 @@ def import_molds():
         return jsonify({'code': 400, 'message': '请上传.xlsx或.xls文件'}), 400
 
     try:
-        wb = openpyxl.load_workbook(file)
+        # Read file content into memory first to avoid FileStorage stream issues
+        file_content = file.read()
+        if not file_content or len(file_content) < 100:
+            return jsonify({'code': 400, 'message': '上传文件内容为空或无效'}), 400
+        wb = openpyxl.load_workbook(io.BytesIO(file_content))
         ws = wb.active
         headers = [cell.value for cell in ws[1]]
         required = ['模具编号', '模具名称', '保养模次间隔']
@@ -373,7 +378,9 @@ def import_molds():
         finally: conn.close()
 
         return jsonify({'code': 200, 'message': f'导入完成：成功 {results["success"]} 条，失败 {results["failed"]} 条', 'data': results})
-    except Exception as e: return jsonify({'code': 500, 'message': f'导入失败: {str(e)}'}), 500
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'code': 500, 'message': f'导入失败: {str(e)}'}), 500
 
 @molds_bp.route('/api/molds/import-template', methods=['GET'])
 @login_required
