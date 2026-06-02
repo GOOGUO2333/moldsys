@@ -325,7 +325,13 @@ def get_reset_history(mold_id):
 @molds_bp.route('/api/molds/import', methods=['POST'])
 @login_required
 def import_molds():
-    if 'file' not in request.files: return jsonify({'code': 400, 'message': '请上传Excel文件'}), 400
+    print(f"[IMPORT] Request received, files={list(request.files.keys())}, content-type={request.content_type}")
+    import sys
+    sys.stdout.flush()
+    if 'file' not in request.files:
+        print(f"[IMPORT] No file in request.files")
+        sys.stdout.flush()
+        return jsonify({'code': 400, 'message': '请上传Excel文件'}), 400
     file = request.files['file']
     if not file.filename or not file.filename.endswith(('.xlsx', '.xls')):
         return jsonify({'code': 400, 'message': '请上传.xlsx或.xls文件'}), 400
@@ -336,6 +342,7 @@ def import_molds():
         print(f"[IMPORT] filename={file.filename}, size={len(file_content) if file_content else 0} bytes")
         if file_content and len(file_content) > 4:
             print(f"[IMPORT] file header bytes: {file_content[:8].hex()}")
+        sys.stdout.flush()
         if not file_content or len(file_content) < 100:
             return jsonify({'code': 400, 'message': '上传文件内容为空或无效'}), 400
         wb = openpyxl.load_workbook(io.BytesIO(file_content))
@@ -383,6 +390,7 @@ def import_molds():
         return jsonify({'code': 200, 'message': f'导入完成：成功 {results["success"]} 条，失败 {results["failed"]} 条', 'data': results})
     except Exception as e:
         traceback.print_exc()
+        sys.stdout.flush()
         return jsonify({'code': 500, 'message': f'导入失败: {str(e)}'}), 500
 
 @molds_bp.route('/api/molds/import-template', methods=['GET'])
