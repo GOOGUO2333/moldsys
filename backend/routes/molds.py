@@ -333,6 +333,9 @@ def import_molds():
     try:
         # Read file content into memory first to avoid FileStorage stream issues
         file_content = file.read()
+        print(f"[IMPORT] filename={file.filename}, size={len(file_content) if file_content else 0} bytes")
+        if file_content and len(file_content) > 4:
+            print(f"[IMPORT] file header bytes: {file_content[:8].hex()}")
         if not file_content or len(file_content) < 100:
             return jsonify({'code': 400, 'message': '上传文件内容为空或无效'}), 400
         wb = openpyxl.load_workbook(io.BytesIO(file_content))
