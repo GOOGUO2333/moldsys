@@ -390,21 +390,12 @@ def import_molds():
         return jsonify({'code': 200, 'message': f'导入完成：成功 {results["success"]} 条，失败 {results["failed"]} 条', 'data': results})
     except Exception as e:
         err_msg = str(e)
-        # Diagnostic: show what was actually received
-        diag_parts = [f"filename={file.filename}"]
+        # Save uploaded file to /tmp for inspection
+        tmp_path = f"/tmp/uploaded_{file.filename or 'unknown'}"
         if 'file_content' in dir() and file_content:
-            diag_parts.append(f"size={len(file_content)} bytes")
-            diag_parts.append(f"header_hex={file_content[:32].hex()}")
-            # Try to decode as text for common formats
-            try:
-                text_preview = file_content[:200].decode('utf-8', errors='replace')
-                if text_preview.strip():
-                    diag_parts.append(f"text_preview={text_preview[:100]}")
-            except:
-                pass
-        else:
-            diag_parts.append("file_content=N/A")
-        diag = " | ".join(diag_parts)
+            with open(tmp_path, 'wb') as f:
+                f.write(file_content)
+        diag = f"saved_to={tmp_path}, size={len(file_content) if 'file_content' in dir() else 'N/A'} bytes, header_hex={file_content[:16].hex() if 'file_content' in dir() else 'N/A'}"
         return jsonify({'code': 500, 'message': f'导入失败: {err_msg} | 诊断: {diag}'}), 500
 
 @molds_bp.route('/api/molds/import-template', methods=['GET'])
